@@ -7,6 +7,7 @@
     bootstrapped: false,
     onlineUsers: [],
     chatMessages: [],
+    mobileNavOpen: false,
     presenceTimer: null,
     chatTimer: null
   };
@@ -127,6 +128,23 @@
     document.querySelectorAll(".nav-link").forEach((node) => {
       node.classList.toggle("active", node.dataset.route === route);
     });
+  }
+
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: 980px)").matches;
+  }
+
+  function setMobileNav(open) {
+    state.mobileNavOpen = Boolean(open && isMobileLayout());
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("navOverlay");
+    if (sidebar) sidebar.classList.toggle("open", state.mobileNavOpen);
+    if (overlay) overlay.classList.toggle("hidden", !state.mobileNavOpen);
+    document.body.classList.toggle("sidebar-open", state.mobileNavOpen);
+  }
+
+  function closeMobileNav() {
+    setMobileNav(false);
   }
 
   function setUserPill(user) {
@@ -1277,6 +1295,24 @@
   }
 
   function bindGlobal() {
+    const mobileNavButton = document.getElementById("btnMobileNav");
+    const closeNavButton = document.getElementById("btnCloseNav");
+    const navOverlay = document.getElementById("navOverlay");
+
+    mobileNavButton.addEventListener("click", () => {
+      setMobileNav(!state.mobileNavOpen);
+    });
+    closeNavButton.addEventListener("click", closeMobileNav);
+    navOverlay.addEventListener("click", closeMobileNav);
+    window.addEventListener("resize", () => {
+      if (!isMobileLayout()) closeMobileNav();
+    });
+    document.querySelectorAll(".nav-link").forEach((node) => {
+      node.addEventListener("click", () => {
+        closeMobileNav();
+      });
+    });
+
     document.getElementById("btnLogout").addEventListener("click", async () => {
       try {
         await api("/api/logout", { method: "POST", body: {} });
@@ -1319,6 +1355,7 @@
     if (state.currentUser) {
       await Promise.all([refreshOnlineUsers(), refreshChatMessages()]);
     }
+    if (!isMobileLayout()) closeMobileNav();
     const db = getCurrentDb();
     setUserPill(state.currentUser);
     const routeKey = pickRoute();
